@@ -1,0 +1,6 @@
+[submodule "pybind11"]
+	path = GPUZIPy/pybind11
+	url = https://github.com/pybind/pybind11
+[submodule "GPUZIPy/pybind11"]
+	path = GPUZIPy/pybind11
+	url = https://github.com/pybind/pybind11

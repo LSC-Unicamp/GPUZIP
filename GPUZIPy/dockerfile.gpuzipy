@@ -1,0 +1,70 @@
+ARG CUDA_VERSION=12.2.2
+FROM nvidia/cuda:${CUDA_VERSION}-devel-ubuntu22.04 AS builder
+
+# Install build dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    make \
+    g++ \
+    gcc \
+    libomp-dev \
+    wget \
+    python3-pip \
+    python-is-python3 \
+    python3-dev \
+    git \
+    nvidia-cuda-toolkit  && \
+    rm -rf /var/lib/apt/lists/*
+
+# Download and install CMake 3.22
+RUN wget --quiet https://github.com/Kitware/CMake/releases/download/v3.22.0/cmake-3.22.0-linux-x86_64.sh && \
+    chmod +x cmake-3.22.0-linux-x86_64.sh && \
+    ./cmake-3.22.0-linux-x86_64.sh --skip-license --prefix=/usr/local && \
+    rm cmake-3.22.0-linux-x86_64.sh
+
+# Set the working directory
+WORKDIR /app
+
+# Copy the project files
+COPY . /app
+
+RUN ls -la
+
+RUN ls -la ./GPUZIPy
+
+# Install gpuzipy
+RUN cd ./GPUZIPy/ && pip install .
+
+# Runtime Stage
+FROM nvidia/cuda:${CUDA_VERSION}-devel-ubuntu22.04
+
+# Install build dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    make \
+    g++ \
+    gcc \
+    libomp-dev \
+    wget \
+    python3-pip \
+    python-is-python3 \
+    python3-dev \
+    git \
+    nvidia-cuda-toolkit  && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY ./GPUZIPy/example/requirements.txt /app/example/requirements.txt
+
+RUN pip install -r /app/example/requirements.txt
+
+# Copy installed pip dependencies from the build stage
+COPY --from=builder /usr/local/lib/python3.10/dist-packages /usr/local/lib/python3.10/dist-packages
+
+# Set the working directory
+WORKDIR /app
+
+# Copy the project files
+COPY ./GPUZIPy/example /app/example
+
+# Set the default command to run the application
+CMD ["python", "/app/example/main.py"]
