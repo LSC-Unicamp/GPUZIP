@@ -190,7 +190,7 @@ protected:
     return compressed_buffer_size(buf_out);
   }
 
-  void decompress(compressedType *buf_in, decompressType *buf_out) override
+  void decompress(compressedType *buf_in, decompressType *buf_out, std::size_t compressed_size = -1) override
   {
     check_return_nvcomp_bitcomp(
         bitcompUncompress(*plan_->handleptr(), reinterpret_cast<void *>(buf_in),
