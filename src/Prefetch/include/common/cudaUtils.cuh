@@ -3,10 +3,8 @@
 #include <cuda_runtime.h>
 #include <iostream>
 
-#if defined(ENABLE_CUDA_CHECK) || defined(DEBUG) || defined(_DEBUG)
 
-
-#define PREFETCH_CUDA_CHECK(call) \
+#define GPUZIP_CUDA_CHECK(call) \
 do { \
     cudaError_t cudaStatus = (call); \
     if (cudaStatus != cudaSuccess) { \
@@ -16,8 +14,14 @@ do { \
     } \
 } while (0)
 
-#else
+void NvtxPush(const char *title) {
+    #ifdef USE_NVTX
+        nvtxRangePush(title);
+    #endif
+}
 
-#define PREFETCH_CUDA_CHECK(cmd) cmd
-
-#endif
+void NvtxPop() {
+    #ifdef USE_NVTX
+        nvtxRangePop();
+    #endif
+}

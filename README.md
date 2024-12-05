@@ -4,38 +4,22 @@ GPUZIP is a library designed to enhance checkpointing on GPUs by combining data 
 
 Supported compressors: [NVIDIA Bitcomp](https://developer.nvidia.com/nvcomp), [cuSZp](https://dl.acm.org/doi/10.1145/3581784.3607048), and [cuZFP](https://zfp.readthedocs.io/en/release1.0.1/execution.html#using-cuda).
 
-[Learn more](https://doi.org/10.1007/978-3-031-69583-4_12)
 
-## GPUZIPy
+## Tutorials & Documentation
+- [C++/CUDA Examples]('./docs/CppCudaExamples.md') - Information of how to include GPUZIP on your C++/CUDA project and how to call its API.
+- [Installing cuZFP]('./docs/InstallingCuZFP.md') - A brief information of how to install cuZFP on the machine to be used by GPUZIP (NVCOMP bitcomp and cuSZp does not need to be manually installed.)
+- [GPUZIPy - Python Package]('./docs/PythonExamples.md') - How to install and use GPUZIPy, a Python wrapper for GPUZIP (Compressor only).
+- [Paper (EuroPAR'2024)](https://doi.org/10.1007/978-3-031-69583-4_12)
 
-### Building
-#### Dependencies (versions below were tested):
-- nvcc 10.1
-- CUDA 12.2
-- NVidia driver 536.19
-- cmake 3.22 (required)
-- make 4.2.0
-- python 3.9
-
-```sh
-cd GPUZIPy
-pip install .
+### This Repository Structure
 ```
-
-### Building with Docker
-```sh
-docker build . -f ./GPUZIPy/dockerfile.gpuzipy -t maltempi/gpuzipy:latest
-```
-
-If you want to have a docker image with an specific Cuda version, just specify it in the `build-arg`.
-
-```sh
-docker build . -t maltempi/gpuzipy:latest  --build-arg CUDA_VERSION=12.1.0
-```
-
-### Running example
-```sh
-docker run --gpus all --rm --env NVIDIA_DISABLE_REQUIRE=1 maltempi/gpuzipy:latest
+- `src/` - Contains the source code for GPUZIP, including the core compression and prefetching algorithms.
+- `src/Prefetch` - Prefetching matters -- it can be used independent from `Compressor`.
+- `src/Prefetch/include` - The folder should be included in your project
+- `src/Compressor` - Compression matters -- it can be used independent from `Prefetch`.
+- `src/Compressor/include` - The folder should be included in your project
+- `GPUZIPy/` - Resources for the Python wrapper. 
+- `docs/` - The documentation for this project.
 ```
 
 ## Cite

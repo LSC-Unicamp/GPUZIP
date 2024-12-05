@@ -5,7 +5,7 @@
 #include <memory>
 #include <zfp.h>
 
-#include "compressor.hpp"
+#include "Compressor.hpp"
 
 class field3d
 {
@@ -139,9 +139,15 @@ private:
  * 
  * @tparam decompressType The type of the decompressed data.
  * @tparam compressedType The type of the compressed data.
+ * 
+ * @author Alan Souza <alan.geof.ba@gmail.com>
+ * @author Thiago Maltempi <maltempi@ic.unicamp.br>
+ * @author Sandro Rigo <srigo@ic.unicamp.br>
+ *
+ * @date Feb 5, 2023
  */
 template <typename decompressType, typename compressedType>
-class compressor_zfp final : public compressor<decompressType, compressedType>
+class CompressorZFP final : public Compressor<decompressType, compressedType>
 {
 public:
   /**
@@ -155,7 +161,7 @@ public:
    * @param float_kind The kind of floating-point data ('float' or 'double').
    * @param rate The compression rate parameter - See https://zfp.readthedocs.io/en/release0.5.4/modes.html#mode-fixed-rate
    */
-  explicit compressor_zfp(const std::size_t n1, const std::size_t n2,
+  explicit CompressorZFP(const std::size_t n1, const std::size_t n2,
                           const std::size_t n3, const std::string float_kind,
                           const double rate)
       : field_(n1, n2, n3, float_kind), stream_(rate, field_) {}
@@ -175,7 +181,7 @@ protected:
     zfp_compress(zfpStream, zfpField);
     stream_close(bitStream);
 
-    return compressed_buffer_size(buf_out);
+    return compressedBufferSize(buf_out);
   }
   void decompress(compressedType *buf_in, decompressType *buf_out, size_t compressed_size = -1) override
   {
@@ -192,11 +198,11 @@ protected:
   }
   std::string name() override { return "zfp compressor"; }
   std::string description() override { return "zfp compressor descr"; }
-  std::size_t compressed_buffer_size(compressedType *buf = nullptr) override
+  std::size_t compressedBufferSize(compressedType *buf = nullptr) override
   {
     return stream_.buffersize(field_);
   }
-  std::size_t compressed_buffer_max_size() override
+  std::size_t compressedMaxSize() override
   {
     return stream_.buffersize(field_);
   }

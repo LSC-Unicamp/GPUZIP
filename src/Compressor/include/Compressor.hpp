@@ -11,9 +11,15 @@
  *
  * @tparam decompressType The type of the decompressed data - "void" is a good choice ;-)
  * @tparam compressedType The type of the compressed data - "void" is a good choice ;-)
+ * 
+ * @author Alan Souza <alan.geof.ba@gmail.com>
+ * @author Thiago Maltempi <maltempi@ic.unicamp.br>
+ * @author Sandro Rigo <srigo@ic.unicamp.br>
+ *
+ * @date Feb 5, 2023
  */
 template <typename decompressType, typename compressedType>
-class compressor
+class Compressor
 {
 public:
   /**
@@ -21,7 +27,7 @@ public:
    *
    * Initializes the compressor with profiling disabled by default.
    */
-  compressor() : profile_{false} {}
+  Compressor() : profile_{false} {}
 
   /**
    * @brief Compress data.
@@ -91,9 +97,9 @@ public:
    * @param buf Pointer to the compressed data buffer. If null, returns the maximum size.
    * @return The size of the compressed data buffer.
    */
-  std::size_t Compressed_buffer_size(compressedType *buf = nullptr)
+  std::size_t CompressedBufferSize(compressedType *buf = nullptr)
   {
-    return compressed_buffer_size(buf);
+    return compressedBufferSize(buf);
   }
 
   /**
@@ -101,9 +107,9 @@ public:
    *
    * @return The maximum size of the compressed data buffer.
    */
-  std::size_t Compressed_buffer_max_size()
+  std::size_t CompressedMaxSize()
   {
-    return compressed_buffer_max_size();
+    return compressedMaxSize();
   }
 
   /**
@@ -111,7 +117,7 @@ public:
    *
    * Generates domain names and marks the start of profiling for the compressor.
    */
-  void Enable_profile()
+  void EnableProfile()
   {
     std::string domainName = "compressor-domain-" + Name();
     cname_ = "Compressor-" + Name();
@@ -129,7 +135,7 @@ public:
    *
    * Disables profiling for the compressor.
    */
-  void Disable_profile() { profile_ = false; }
+  void DisableProfile() { profile_ = false; }
 
 protected:
   /**
@@ -178,7 +184,7 @@ protected:
    * @param buf Pointer to the compressed data buffer. If null, returns the maximum size.
    * @return The size of the compressed data buffer.
    */
-  virtual std::size_t compressed_buffer_size(compressedType *buf) = 0;
+  virtual std::size_t compressedBufferSize(compressedType *buf) = 0;
 
   /**
    * @brief Get the maximum size of the compressed data buffer.
@@ -187,7 +193,7 @@ protected:
    *
    * @return The maximum size of the compressed data buffer.
    */
-  virtual std::size_t compressed_buffer_max_size() = 0;
+  virtual std::size_t compressedMaxSize() = 0;
 
 private:
   std::string cname_, dname_;

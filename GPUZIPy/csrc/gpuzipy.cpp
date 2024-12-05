@@ -5,9 +5,9 @@
  * @date Feb 24, 2024
  */
 #include <pybind11/pybind11.h>
-#include "../../Compressor/include/compressor_zfp.hpp"
-#include "../../Compressor/include/compressor_nvcomp_bitcomp.hpp"
-#include "../../Compressor/include/compressor_cuszp.hpp"
+#include "../../src/Compressor/include/compressor_zfp.hpp"
+#include "../../src/Compressor/include/compressor_nvcomp_bitcomp.hpp"
+#include "../../src/Compressor/include/compressor_cuszp.hpp"
 
 #define STRINGIFY(x) #x
 #define MACRO_STRINGIFY(x) STRINGIFY(x)

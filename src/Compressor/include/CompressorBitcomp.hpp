@@ -6,7 +6,7 @@
 #include <native/bitcomp.h>
 #include <string>
 
-#include "compressor.hpp"
+#include "Compressor.hpp"
 
 #include "cuda_utils.hpp"
 
@@ -50,10 +50,16 @@ struct bitcompPlan
  *
  * @tparam decompressType The type of the decompressed data.
  * @tparam compressedType The type of the compressed data.
+ * 
+ * @author Alan Souza <alan.geof.ba@gmail.com>
+ * @author Thiago Maltempi <maltempi@ic.unicamp.br>
+ * @author Sandro Rigo <srigo@ic.unicamp.br>
+ *
+ * @date Feb 5, 2023
  */
 template <typename decompressType, typename compressedType>
-class compressor_bitcomp final
-    : public compressor<decompressType, compressedType>
+class CompressorBitcomp final
+    : public Compressor<decompressType, compressedType>
 {
 public:
   /**
@@ -74,7 +80,7 @@ public:
    * @param float_kind The kind of floating-point data ('float' or 'double').
    * @param algo The algorithm parameter. Acceptable values: "default" or "sparse".
    */
-  explicit compressor_bitcomp(const std::size_t n1, const std::size_t n2,
+  explicit CompressorBitcomp(const std::size_t n1, const std::size_t n2,
                               const std::size_t n3,
                               const int config_kind = 0,
                               const double range_fraction = 0.0,
@@ -126,9 +132,9 @@ protected:
   {
     bitcompDataType_t data_type;
     std::size_t size;
-    check_return_nvcomp_bitcomp(
+    check(
         bitcompGetDataTypeFromHandle(*plan_->handleptr(), &data_type));
-    check_return_nvcomp_bitcomp(
+    check(
         bitcompGetUncompressedSizeFromHandle(*plan_->handleptr(), &size));
     double delta = 0.0;
     if (kind_ == 0)
@@ -172,13 +178,13 @@ protected:
 
     if (data_type == BITCOMP_FP32_DATA)
     {
-      check_return_nvcomp_bitcomp(bitcompCompressLossy_fp32(
+      check(bitcompCompressLossy_fp32(
           *plan_->handleptr(), reinterpret_cast<float *>(buf_in),
           reinterpret_cast<void *>(buf_out), delta));
     }
     else if (data_type == BITCOMP_FP64_DATA)
     {
-      check_return_nvcomp_bitcomp(bitcompCompressLossy_fp64(
+      check(bitcompCompressLossy_fp64(
           *plan_->handleptr(), reinterpret_cast<double *>(buf_in),
           reinterpret_cast<void *>(buf_out), delta));
     }
@@ -187,12 +193,12 @@ protected:
       throw std::runtime_error("Invalid value for dataype");
     }
 
-    return compressed_buffer_size(buf_out);
+    return compressedBufferSize(buf_out);
   }
 
-  void decompress(compressedType *buf_in, decompressType *buf_out, std::size_t compressed_size = -1) override
+  void decompress(compressedType *buf_in, decompressType *buf_out, size_t compressed_size = -1) override
   {
-    check_return_nvcomp_bitcomp(
+    check(
         bitcompUncompress(*plan_->handleptr(), reinterpret_cast<void *>(buf_in),
                           reinterpret_cast<void *>(buf_out)));
   }
@@ -201,22 +207,22 @@ protected:
   {
     return "nvcomp-bitcomp-compressor descr";
   }
-  std::size_t compressed_buffer_size(compressedType *buf) override
+  std::size_t compressedBufferSize(compressedType *buf) override
   {
     std::size_t size;
-    check_return_nvcomp_bitcomp(bitcompGetCompressedSize(buf, &size));
+    check(bitcompGetCompressedSize(buf, &size));
     return size;
   }
-  std::size_t compressed_buffer_max_size() override
+  std::size_t compressedMaxSize() override
   {
     std::size_t size;
-    check_return_nvcomp_bitcomp(
+    check(
         bitcompGetUncompressedSizeFromHandle(*plan_->handleptr(), &size));
     return bitcompMaxBuflen(size);
   }
 
 private:
-  void check_return_nvcomp_bitcomp(bitcompResult_t result)
+  void check(bitcompResult_t result)
   {
     if (result == BITCOMP_SUCCESS)
     {
