@@ -6,12 +6,12 @@ Supported compressors: [NVIDIA Bitcomp](https://developer.nvidia.com/nvcomp), [c
 
 
 ## Tutorials & Documentation
-- [C++/CUDA Examples]('./docs/CppCudaExamples.md') - Information of how to include GPUZIP on your C++/CUDA project and how to call its API.
-- [Installing cuZFP]('./docs/InstallingCuZFP.md') - A brief information of how to install cuZFP on the machine to be used by GPUZIP (NVCOMP bitcomp and cuSZp does not need to be manually installed.)
-- [GPUZIPy - Python Package]('./docs/PythonExamples.md') - How to install and use GPUZIPy, a Python wrapper for GPUZIP (Compressor only).
+- [C++/CUDA Examples](docs/CppCudaExamples.md) - Information of how to include GPUZIP on your C++/CUDA project and how to call its API.
+- [Installing cuZFP](docs/InstallingCuZFP.md) - A brief information of how to install cuZFP on the machine to be used by GPUZIP (NVCOMP bitcomp and cuSZp does not need to be manually installed.)
+- [GPUZIPy - Python Package](docs/PythonExamples.md) - How to install and use GPUZIPy, a Python wrapper for GPUZIP (Compressor only).
 - [Paper (EuroPAR'2024)](https://doi.org/10.1007/978-3-031-69583-4_12)
 
-### This Repository Structure
+## This Repository Structure
 ```
 - `src/` - Contains the source code for GPUZIP, including the core compression and prefetching algorithms.
 - `src/Prefetch` - Prefetching matters -- it can be used independent from `Compressor`.
@@ -21,6 +21,10 @@ Supported compressors: [NVIDIA Bitcomp](https://developer.nvidia.com/nvcomp), [c
 - `GPUZIPy/` - Resources for the Python wrapper. 
 - `docs/` - The documentation for this project.
 ```
+
+## Version
+- [1.0.0](https://github.com/LSC-Unicamp/GPUZIP/tree/1.0.0%2Beuropar24) - Presented at EuroPar 2024. 
+- [2.0.0](https://github.com/LSC-Unicamp/GPUZIP/tree/2.0.0%2Bunpublished) - Latest version, still unpublished, under review.
 
 ## Cite
 
