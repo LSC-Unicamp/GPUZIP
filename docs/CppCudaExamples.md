@@ -124,6 +124,68 @@ cmake -DBITCOMP=0
 cmake -DUSE_NVTX=1
 ```
 
+## EXAMPLE: Compression only (Bitcomp)
+
+This example demonstrates how to use GPUZIP in compression-only mode with the Bitcomp backend. It assumes memory is already allocated on the GPU (using cudaMalloc, for example), and that you're compressing and decompressing 3D data of dimensions n1 × n2 × n3.
+
+```cpp
+#include "common/GPUZIPBuilders.cpp"
+#include "common/GPUZIPConfig.h"
+
+int main() {
+    // Create and configure the compression settings
+    // Full code in: src/Prefetch/include/common/GPUZIPConfig.h
+    auto gpuzip_config = new gpuzip_config_t();
+
+    // Set compressor backend: 0 = None, 1 = cuZFP, 2 = Bitcomp
+    gpuzip_config->compressor = 2; // Use Bitcomp
+
+    // For cuZFP set the max bits config.
+    // https://zfp.readthedocs.io/en/release0.5.4/modes.html#mode-fixed-rate
+    // gpuzip_config->zfp_bit_rate = 8;
+
+    // Bitcomp delta configuration strategy:
+    // 0 = Max fraction (scaled by MaxFraction)
+    // 1 = Statistical range (mean ± NumSigma × stddev)
+    // 2 = Static delta (use exact Delta value)
+    gpuzip_config->bitcomp_delta_config = 2;
+
+    // Only used when bitcomp_delta_config == 2
+    gpuzip_config->bitcomp_delta = 1e-8;
+
+    // Choose Bitcomp algorithm: 0 = default, 1 = sparse
+    gpuzip_config->bitcomp_algorithm = 0;
+
+    // Assume input 3D dimensions are n1 × n2 × n3
+    int n1 = 128, n2 = 128, n3 = 128;
+
+    // Build the compressor instance
+    auto compressor = GPUZIPBuilders::CompressorBuilder(gpuzip_config, n1, n2, n3);
+
+    // Allocate and prepare memory (assumed to be on GPU)
+    float* src;             // Original uncompressed input
+    unsigned char* compressed_data;   // Output buffer (compressed)
+    float* uncompressed_data;         // Output buffer (decompressed)
+
+    // TODO: Allocate src, compressed_data, and uncompressed_data with cudaMalloc
+
+    // Compress
+    size_t actual_compressed_size = compressor->Compress(src, compressed_data);
+
+    // Decompress
+    compressor->Decompress(compressed_data, uncompressed_data);
+
+    // Cleanup
+    delete compressor;
+    delete gpuzip_config;
+
+    // TODO: Free GPU data
+
+    return 0;
+}
+```
+
+
 ## EXAMPLE: Multi-GPU adjoint computing (Prefetch+Compression)
 
 The following example can run regardless of the chosen compressor or checkpointing algorithm.
