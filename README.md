@@ -36,18 +36,18 @@ Supported compressors: [NVIDIA Bitcomp](https://developer.nvidia.com/nvcomp), [c
 
 ```text
 @article{gpuzip2,
-author = {Thiago Maltempi and Sandro Rigo and Marcio Pereira and Hervé Yviquel and Gustavo Leite and Orlando Lee and Jessé Costa and Guido Araujo},
-title ={Checkpointing fine-tuning for accelerating seismic applications in GPUs},
-journal = {The International Journal of High Performance Computing Applications},
-volume = {0},
-number = {0},
-pages = {10943420251340794},
-year = {0},
-doi = {10.1177/10943420251340794},
-URL = {https://doi.org/10.1177/10943420251340794},
-eprint = {https://doi.org/10.1177/10943420251340794},
-abstract = { High-performance computing (HPC) systems are essential to handle computationally intensive tasks in fields such as physics, climate modeling, and seismic analysis. Reverse Time Migration (RTM), a widely used seismic imaging technique for oil reservoir exploration, exemplifies these challenges, requiring vast amounts of memory and extended computation times. RTM relies on checkpointing to store data during forward wave propagation for reuse in the backward phase. However, traditional checkpoint methods are constrained by costly host-GPU data transfers, which limits performance. GPUZIP v2.0 addresses these bottlenecks with several enhancements over its predecessor: (1) A GPU Checkpoint Cache with a least recently used (LRU) policy enables flexible checkpoint storage configurations and efficient prefetching; (2) A redesigned prefetch algorithm further increases cache hit ratios; and (3) The integration of three distinct checkpointing algorithms provides adaptability for diverse application profiles. These advancements allow fine-tuning of RTM and similar applications, significantly improving performance. The experimental results show that GPUZIP v2.0 achieves speedups of up to 5.12×, surpassing the 3.9× achieved by its previous version. GPUZIP v2.0 provides an effective solution for accelerating memory-intensive HPC applications by reducing data transfer overhead and offering customized checkpoint strategies. GPUZIP is publicly available via GitHub. }
-}a
+    author = {Thiago Maltempi and Sandro Rigo and Marcio Pereira and Hervé Yviquel and Gustavo Leite and Orlando Lee and Jessé Costa and Guido Araujo},
+    title ={Checkpointing fine-tuning for accelerating seismic applications in GPUs},
+    journal = {The International Journal of High Performance Computing Applications},
+    volume = {0},
+    number = {0},
+    pages = {15},
+    year = {0},
+    doi = {10.1177/10943420251340794},
+    URL = {https://doi.org/10.1177/10943420251340794},
+    eprint = {https://doi.org/10.1177/10943420251340794},
+    abstract = { High-performance computing (HPC) systems are essential to handle computationally intensive tasks in fields such as physics, climate modeling, and seismic analysis. Reverse Time Migration (RTM), a widely used seismic imaging technique for oil reservoir exploration, exemplifies these challenges, requiring vast amounts of memory and extended computation times. RTM relies on checkpointing to store data during forward wave propagation for reuse in the backward phase. However, traditional checkpoint methods are constrained by costly host-GPU data transfers, which limits performance. GPUZIP v2.0 addresses these bottlenecks with several enhancements over its predecessor: (1) A GPU Checkpoint Cache with a least recently used (LRU) policy enables flexible checkpoint storage configurations and efficient prefetching; (2) A redesigned prefetch algorithm further increases cache hit ratios; and (3) The integration of three distinct checkpointing algorithms provides adaptability for diverse application profiles. These advancements allow fine-tuning of RTM and similar applications, significantly improving performance. The experimental results show that GPUZIP v2.0 achieves speedups of up to 5.12×, surpassing the 3.9× achieved by its previous version. GPUZIP v2.0 provides an effective solution for accelerating memory-intensive HPC applications by reducing data transfer overhead and offering customized checkpoint strategies. GPUZIP is publicly available via GitHub. }
+}
 ```
   
 
