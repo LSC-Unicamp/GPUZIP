@@ -6,6 +6,7 @@
 #include "checkpointing/trace/TraceCheckpointing.cpp"
 #include "prefetch/CheckpointOnly.cuh"
 #include "prefetch/Prefetch.cuh"
+#include "common/real_t.h"
 
 #ifdef CUSZP
 #include "CompressorCuSZp.hpp"
