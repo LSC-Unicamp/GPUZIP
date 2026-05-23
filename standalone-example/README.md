@@ -11,6 +11,8 @@ End-to-end demo of the GPUZIP library on a **dummy 3-D acoustic wave adjoint sim
 GPUZIP headers are included directly as source — **no pre-compilation
 of the library is required**.
 
+**Important note:** Claude generated the CUDA kernels included in this example and has not been thoroughly reviewed or validated for correctness, performance, or production use. They were created solely to provide a minimal working example capable of executing operations on the 3D dataset and exercising the GPUZIP integration path.
+
 ---
 
 ## Requirements
