@@ -1,13 +1,16 @@
 #pragma once
 
 typedef struct {
-  // TraceCheckpointing=0 or RevolveCheckpointing=1
+  // TraceCheckpointing=0 or RevolveCheckpointing=1 or UniformCheckpointing=2
   int checkpointing_algorithm;
+
+  // Uniform's checkpointing number of snapshots
+  int checkpointing_snaps;
 
   // 0 no prefetch. For prefetching, the capacity needs at minimum 2.
   int cache_capacity;
 
-  // Empty=0 (for no compression), cuZFP=1 or Bitcomp=2. Integer.
+  // Empty=0 (for no compression), cuZFP=1, Bitcomp=2, cuSZp=3. Integer.
   int compressor;
 
   // 0=DEBUG, 1=INFO, 2=WARN, 3=ERROR
@@ -36,6 +39,9 @@ typedef struct {
 
   // cuSZp's error bound parameter. Double.
   double cuszp_err_bound;
+
+  // cuSZp's floating-point type ("float" or "double") Default: float.
+  const char *float_kind;
 
   // The way Bitcomp's delta parameter will be set. Integer.
   // 0 = Max fraction strategy -- Used max value in data scaled by `MaxFraction`

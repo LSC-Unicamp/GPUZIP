@@ -94,7 +94,7 @@ Or use our Docker image `docker pull maltempi/awave-dev:ompc`
     FetchContent_Declare(
         cuszp
         GIT_REPOSITORY https://github.com/szcompressor/cuSZp.git
-        GIT_TAG cuSZp-V1.1
+        GIT_TAG cuSZp-V3.0.0
     )
     FetchContent_MakeAvailable(cuszp)
     target_link_libraries(awave3d-decom
