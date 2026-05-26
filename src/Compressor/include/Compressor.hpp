@@ -28,6 +28,8 @@ public:
    * Initializes the compressor with profiling disabled by default.
    */
   Compressor() : profile_{false} {}
+  
+  virtual ~Compressor() = default;
 
   /**
    * @brief Compress data.

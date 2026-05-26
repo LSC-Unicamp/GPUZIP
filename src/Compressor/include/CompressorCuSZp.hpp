@@ -1,9 +1,7 @@
 #pragma once
 #include "Compressor.hpp"
 #include "cuda_utils.hpp"
-#include <cuSZp_entry_f32.h>
-#include <cuSZp_timer.h>
-#include <cuSZp_utility.h>
+#include "cuSZp.h"
 #include <cuda_runtime.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -39,11 +37,20 @@ public:
    * @param n1 First dimension of the input data.
    * @param n2 Second dimension of the input data.
    * @param n3 Third dimension of the input data.
+   * @param float_kind The kind of floating-point data ('float' or 'double').
    * @param error_bound The error bound for lossy compression.
    */
-  explicit CompressorCuSZp(const std::size_t n1, const std::size_t n2,
-                            const std::size_t n3, const double error_bound)
-      : n1_(n1), n2_(n2), n3_(n3), n_(n1 * n2 * n3), error_bound_(error_bound) {
+  explicit CompressorCuSZp(const std::size_t n1, 
+                           const std::size_t n2,
+                           const std::size_t n3, 
+                           const double error_bound,
+                           const std::string &float_kind = "float")
+      : n1_(n1), n2_(n2), n3_(n3), n_(n1 * n2 * n3), error_bound_(error_bound), float_kind_(float_kind) 
+  {
+    if (float_kind_ != "float" && float_kind_ != "double")
+    {
+      throw std::invalid_argument("float_kind must be 'float' or 'double'");
+    }
   }
 
 protected:
@@ -57,13 +64,28 @@ protected:
    */
   size_t compress(decompressType *buf_in, compressedType *buf_out) override {
     size_t compressed_size;
-    double rel_errbound =
-        error_bound_ * (maxFloat(reinterpret_cast<float *>(buf_in), n_) -
-                        minFloat(reinterpret_cast<float *>(buf_in), n_));
-    SZp_compress_deviceptr_f32(reinterpret_cast<float *>(buf_in),
-                               reinterpret_cast<unsigned char *>(buf_out), n_,
-                               &compressed_size, rel_errbound,
-                               cudaStreamDefault);
+    if (float_kind_ == "float")
+    {
+      float rel_errbound = error_bound_ *
+                          (maxFloat(reinterpret_cast<float *>(buf_in), n_) -
+                          minFloat(reinterpret_cast<float *>(buf_in), n_));
+
+      cuSZp_compress_1D_fixed_f32(reinterpret_cast<float *>(buf_in),
+                                  reinterpret_cast<unsigned char *>(buf_out), n_,
+                                  &compressed_size, rel_errbound,
+                                  cudaStreamDefault);
+    }
+    else if (float_kind_ == "double")
+    {
+      double rel_errbound = error_bound_ *
+                          (maxDouble(reinterpret_cast<double *>(buf_in), n_) -
+                          minDouble(reinterpret_cast<double *>(buf_in), n_));
+
+      cuSZp_compress_1D_fixed_f64(reinterpret_cast<double *>(buf_in),
+                                  reinterpret_cast<unsigned char *>(buf_out), n_,
+                                  &compressed_size, rel_errbound,
+                                  cudaStreamDefault);
+    }
     return compressed_size;
   }
 
@@ -78,10 +100,24 @@ protected:
    */
   void decompress(compressedType *buf_in, decompressType *buf_out,
                   size_t compressed_size = -1) override {
-    SZp_decompress_deviceptr_f32(reinterpret_cast<float *>(buf_out),
-                                 reinterpret_cast<unsigned char *>(buf_in), n_,
-                                 compressed_size, error_bound_,
-                                 cudaStreamDefault);
+    if (float_kind_ == "float")
+    {
+        cuSZp_decompress_1D_fixed_f32(reinterpret_cast<float *>(buf_out),
+                                     reinterpret_cast<unsigned char *>(buf_in), n_,
+                                     compressed_size, error_bound_,
+                                     cudaStreamDefault);
+    }
+    else if (float_kind_ == "double")
+    {
+        cuSZp_decompress_1D_fixed_f64(reinterpret_cast<double *>(buf_out),
+                                      reinterpret_cast<unsigned char *>(buf_in), n_,
+                                      compressed_size, error_bound_,
+                                      cudaStreamDefault);
+    }
+    else
+    {
+      throw std::invalid_argument("invalid argument for float_kind");
+    }
   }
 
   /**
@@ -118,10 +154,20 @@ protected:
    */
   std::size_t compressedMaxSize() override {
     // https://github.com/szcompressor/cuSZp/blob/f47064f4edbc00aceb36692232ac7eef3fefaf2b/examples/cuSZp_gpu_f32_api.cpp#L64
-    return ((n_ + 262144 - 1) / 262144 * 262144) * sizeof(float);
+    size_t elem_size;
+
+    if (float_kind_ == "float")
+        elem_size = sizeof(float);
+    else if (float_kind_ == "double")
+        elem_size = sizeof(double);
+    else
+        throw std::invalid_argument("invalid argument for float_kind");
+
+    return ((n_ + 262144 - 1) / 262144 * 262144) * elem_size;
   }
 
 private:
+  std::string float_kind_;
   const double error_bound_; ///< Absolute error bound for compression.
   const size_t n1_;          ///< First dimension of input data.
   const size_t n2_;          ///< Second dimension of input data.
