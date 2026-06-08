@@ -3,6 +3,7 @@
 
 #include "GPUZIPLogger.cpp"
 #include "checkpointing/revolve/RevolveCheckpointing.cpp"
+#include "checkpointing/uniform/UniformCheckpointing.cpp"
 #include "checkpointing/trace/TraceCheckpointing.cpp"
 #include "prefetch/CheckpointOnly.cuh"
 #include "prefetch/Prefetch.cuh"
@@ -114,9 +115,17 @@ public:
       GPUZIPLogger::Info("Using Trace Checkpointing (%s).\n",
                          gpuzip_config->trace_file_path);
       return new TraceCheckpointing(steps, gpuzip_config->trace_file_path);
-    } else {
+    } else if(gpuzip_config->checkpointing_algorithm == 1) {
       GPUZIPLogger::Info("Using Revolve Checkpointing .\n");
       return new RevolveCheckpointing(steps, gpuzip_config->revolve_log_level);
+    } else{
+      GPUZIPLogger::Info("Using Uniform Checkpointing. \n");
+      if(gpuzip_config->checkpointing_snaps <= 0) {
+        GPUZIPLogger::Error("UniformCheckpointing requires "
+                            "gpuzip_config->checkpointing_snaps > 0.\n");
+        exit(-1);
+      }
+      return new UniformCheckpointing(steps, gpuzip_config->checkpointing_snaps);
     }
   }
 
@@ -158,6 +167,10 @@ public:
 #endif
     } else if (gpuzip_config->compressor == 3) {
 #ifdef CUSZP
+      if(gpuzip_config->float_kind) {
+        return std::make_unique<CompressorCuSZp<void, void>>(
+            n1, n2, n3, gpuzip_config->cuszp_err_bound, gpuzip_config->float_kind);
+      }
       return std::make_unique<CompressorCuSZp<void, void>>(
           n1, n2, n3, gpuzip_config->cuszp_err_bound);
 #else

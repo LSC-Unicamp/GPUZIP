@@ -29,8 +29,9 @@ enum ActionType { ACTION_FORWARD, ACTION_SAVE, ACTION_RESTORE, ACTION_BACKWARD, 
  * 
  * - TRACE: Follows a predefined trace for checkpointing actions.
  * - REVOLVE: Uses the Revolve algorithm for checkpointing.
+ * - UNIFORM: Uses the Uniform algorithm for checkpointing.
  */
-enum CheckpointingImplementation { TRACE, REVOLVE };
+enum CheckpointingImplementation { TRACE, REVOLVE, UNIFORM };
 
 /**
  * @struct Action
@@ -97,6 +98,7 @@ public:
    * @param _steps The total number of computational steps for checkpointing.
    */
   Checkpointing(int _steps) { steps = _steps; }
+  Checkpointing(int _steps, int _snaps) {steps = _steps; snaps = _snaps;}
 
   /**
    * @brief Retrieves the total number of checkpoints.
