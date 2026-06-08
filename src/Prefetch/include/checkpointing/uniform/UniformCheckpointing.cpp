@@ -58,6 +58,7 @@ protected:
    */
   void reset() override {
     checkpoints.clear();
+    setCheckpoints();
     checkpoint_idx = 0;
     adjoint = false;
     save = false;
@@ -117,7 +118,7 @@ protected:
 
     // Adjoint from last to first timestep
     // Beginning of a recomputation interval.
-    if(current_ts == checkpoints[checkpoint_idx+1] || current_ts == steps){
+    if(current_ts == steps || current_ts == checkpoints[checkpoint_idx+1]){
       
       // First visit: execute backward at the interval boundary.
       if(!restore) {
@@ -174,13 +175,14 @@ public:
    *
    * @param steps The number of computational steps for which checkpointing is
    * required.
-   * @param snaps Total number of checkpoints used by the algorithm.
+   * @param _snaps Total number of checkpoints used by the algorithm.
    *
    * Initializes the base `Checkpointing` class and computes the uniformly
    * distributed checkpoint locations.
    */
-  UniformCheckpointing(int steps, int snaps) 
-      : Checkpointing(steps, snaps) { 
+  UniformCheckpointing(int steps, int _snaps) 
+      : Checkpointing(steps) { 
+        snaps = _snaps;
         setCheckpoints(); 
   }
 };
