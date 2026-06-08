@@ -98,7 +98,6 @@ public:
    * @param _steps The total number of computational steps for checkpointing.
    */
   Checkpointing(int _steps) { steps = _steps; }
-  Checkpointing(int _steps, int _snaps) {steps = _steps; snaps = _snaps;}
 
   /**
    * @brief Retrieves the total number of checkpoints.

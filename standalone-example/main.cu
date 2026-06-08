@@ -83,7 +83,6 @@ int main(int argc, char* argv[])
     std::cout << "=== GPUZIP Standalone Example ===\n"
               << "Grid        : " << n1 << " x " << n2 << " x " << n3 << "\n"
               << "Steps       : " << steps << "\n"
-              << "Checkpointing: " << (gcfg.checkpointing_algorithm ? "Revolve" : "Trace") << "\n"
               << "Cache capacity: " << gcfg.cache_capacity << "\n"
               << "Compressor  : " << gcfg.compressor
               << (gcfg.compressor == 0 ? " (none)" :

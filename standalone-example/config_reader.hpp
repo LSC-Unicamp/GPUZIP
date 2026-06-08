@@ -53,6 +53,7 @@ inline gpuzip_config_t load_gpuzip_config(const ConfigReader& cfg) {
     c.enable_compression_rate_log = false;
     c.compression_factor          = cfg.get_float("compression_factor", 0.0f);
     c.trace_file_path             = nullptr;
+    c.checkpointing_snaps         = cfg.get_int("checkpointing_snaps", 0);  
     c.revolve_log_level           = cfg.get_int("revolve_log_level", 0);
     c.zfp_bit_rate                = cfg.get_int("zfp_bit_rate", 8);
     c.cuszp_err_bound             = cfg.get_double("cuszp_err_bound", 1e-4);

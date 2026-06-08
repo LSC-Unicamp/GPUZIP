@@ -70,7 +70,7 @@ endif()
 if(WITH_CUSZP)
     FetchContent_Declare(cuszp_fetch
         GIT_REPOSITORY https://github.com/szcompressor/cuSZp.git
-        GIT_TAG        cuSZp-V1.1
+        GIT_TAG        cuSZp-V3.0.0
     )
     FetchContent_MakeAvailable(cuszp_fetch)
 endif()
@@ -104,7 +104,7 @@ if(WITH_BITCOMP)
 endif()
 
 if(WITH_CUSZP)
-    target_link_libraries(gpuzip_example PRIVATE cuszp::cuszp)
+    target_link_libraries(gpuzip_example PRIVATE cuSZp_static)
     target_compile_definitions(gpuzip_example PRIVATE CUSZP)
 endif()
 
