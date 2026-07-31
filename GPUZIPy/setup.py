@@ -3,8 +3,13 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pybind11
 from setuptools import Extension, setup
 from setuptools.command.build_ext import build_ext
+
+HERE = Path(__file__).parent.resolve()
+LONG_DESCRIPTION = (HERE / "README.md").read_text(encoding="utf-8")
+
 
 class CMakeExtension(Extension):
     def __init__(self, name: str, sourcedir: str = "") -> None:
@@ -25,8 +30,8 @@ class CMakeBuild(build_ext):
         cmake_args = [
             f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={extdir}{os.sep}",
             f"-DPYTHON_EXECUTABLE={sys.executable}",
-            f"-DCMAKE_BUILD_TYPE={cfg}", 
-            f"-DPY=1",
+            f"-DCMAKE_BUILD_TYPE={cfg}",
+            f"-Dpybind11_DIR={pybind11.get_cmake_dir()}",
             f"-DVERSION_INFO={self.distribution.get_version()}",
         ]
 
@@ -58,11 +63,32 @@ setup(
     version="0.0.1",
     author="Thiago Maltempi",
     author_email="maltempi@ic.unicamp.br",
-    description="A wrapper for GPUZIP in Python.",
-    long_description="",
-    ext_modules=[CMakeExtension("cmake_example")],
+    description="Python bindings for GPUZIP's GPU compression layer (Bitcomp, cuZFP, cuSZp).",
+    long_description=LONG_DESCRIPTION,
+    long_description_content_type="text/markdown",
+    url="https://github.com/LSC-Unicamp/GPUZIP",
+    project_urls={
+        "Source": "https://github.com/LSC-Unicamp/GPUZIP",
+        "Documentation": "https://github.com/LSC-Unicamp/GPUZIP/blob/main/docs/PythonExamples.md",
+        "Bug Tracker": "https://github.com/LSC-Unicamp/GPUZIP/issues",
+    },
+    license="MIT",
+    license_files=["LICENSE"],
+    classifiers=[
+        "Development Status :: 3 - Alpha",
+        "Intended Audience :: Science/Research",
+        "Operating System :: POSIX :: Linux",
+        "Programming Language :: C++",
+        "Programming Language :: Python :: 3",
+        "Topic :: Scientific/Engineering",
+        "Environment :: GPU :: NVIDIA CUDA",
+    ],
+    ext_modules=[CMakeExtension("gpuzipy")],
     cmdclass={"build_ext": CMakeBuild},
     zip_safe=False,
-    extras_require={"test": ["pytest>=6.0"]},
+    extras_require={
+        "test": ["pytest>=6.0"],
+        "example": ["cupy>=13.0.0"],
+    },
     python_requires=">=3.7",
 )

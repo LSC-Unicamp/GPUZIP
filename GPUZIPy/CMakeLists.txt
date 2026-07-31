@@ -50,7 +50,7 @@ set(BUILD_CUDA ON CACHE BOOL "Build cuszp with CUDA support")
 FetchContent_Declare(
     cuszp
     GIT_REPOSITORY https://github.com/szcompressor/cuSZp.git
-    GIT_TAG cuSZp-V1.1
+    GIT_TAG cuSZp-V3.0.0
 )
 FetchContent_MakeAvailable(cuszp)
 
@@ -79,13 +79,33 @@ find_package(nvcomp REQUIRED)
 ##
 ## PyBind11 dependency
 ##
-add_subdirectory(pybind11)
+# Resolved via the pip-installed pybind11 package (setup.py passes
+# -Dpybind11_DIR=$(python -c "import pybind11; print(pybind11.get_cmake_dir())")),
+# so building an sdist does not require the pybind11 git submodule to be checked out.
+find_package(pybind11 CONFIG REQUIRED)
 include_directories(${ZFP_SOURCE_DIR}/include ${NVCOMP_SRC_DIR}/include)
+
+# cuda_utils.cu: GPU min/max/mean/std reductions used by CompressorBitcomp/CompressorCuSZp.
+# Declared in src/Compressor/include/cuda_utils.hpp but defined separately, so it must be
+# compiled and linked in explicitly (it is not part of the header-only Compressor include tree).
+add_library(gpuzip_cuda_utils STATIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Compressor/cuda_utils.cu)
+target_include_directories(gpuzip_cuda_utils PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Compressor/include
+    ${CUDAToolkit_INCLUDE_DIRS})
+target_link_libraries(gpuzip_cuda_utils PUBLIC Thrust)
+
 pybind11_add_module(gpuzipy ./csrc/gpuzipy.cpp)
+target_include_directories(gpuzipy PRIVATE ${CUDAToolkit_INCLUDE_DIRS})
+# cuSZp_shared, not cuSZp_static: cuSZp is built with relocatable device code, and
+# gpuzipy (a pybind11 MODULE target with no .cu sources of its own) can't reliably
+# get CMake's device-link step to resolve it. cuSZp_shared is a real CUDA SHARED
+# library, so its device code is already resolved when it's built, same as zfp's.
 target_link_libraries(gpuzipy
   PRIVATE
+  gpuzip_cuda_utils
   zfp::zfp
-  cuszp::cuszp
+  cuSZp_shared
   nvcomp::nvcomp
   -lcuda
   -lcusparse)
