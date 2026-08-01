@@ -1,7 +1,7 @@
 # GPUZIPy
 
 Test GPUZIPy in Colab:
-- [![Test GPUZIPy In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/LSC-Unicamp/GPUZIP/blob/main/GPUZIPy/example/GPUZIPy_Example.ipynb) 
+[![Test GPUZIPy In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/LSC-Unicamp/GPUZIP/blob/main/GPUZIPy/example/GPUZIPy_Example.ipynb) 
 
 Python bindings for [GPUZIP](https://github.com/LSC-Unicamp/GPUZIP)'s GPU compression layer
 (`Compressor`), exposing `CompressorBitcomp` (NVIDIA Bitcomp), `CompressorZFP` (cuZFP), and
