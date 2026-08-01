@@ -18,30 +18,19 @@ and cuSZp against your local CUDA toolkit.
 - CMake >= 3.22
 - Internet access at install time (build-time dependencies are fetched automatically: Thrust, ZFP, cuSZp, nvcomp)
 
-## Build
-
-With cudnn
-```sh
-docker pull nvidia/cuda:13.9.2-cudnn-devel-ubuntu24.04
-docker run -it -v $PWD/..:/GPUZIP --gpus all --rm nvidia/cuda:12.9.2-cudnn-devel-ubuntu24.04 bash
-cd /GPUZIP/GPUZIPy
-apt-get update
-apt-get install python3 python3.12-venv python3-dev git -y
-python3 -m venv .venv
-source .venv/bin/activate
-pip install .
-```
-
-with cupy:
+## Run the examples with Docker
 
 ```sh
-docker run -it -v $PWD/..:/GPUZIP --gpus all --rm cupy/cupy:v13.6.0 bash
-cd /GPUZIP/GPUZIPy
-apt-get update
-apt install git -y
-pip install .
-python example/main.py
+# from the repo root
+mkdir -p GPUZIPy/example/output
+docker run --rm --gpus all \
+    -v $PWD/GPUZIPy/example/output:/GPUZIP/GPUZIPy/example/output \
+    maltempi/gpuzipy:latest
 ```
+
+The container is removed after it exits (`--rm`), so without that volume mount the
+rendered PSNR/SSIM slice comparisons in `example/output/` would be lost along with it.
+With it, results land directly in `GPUZIPy/example/output/` on the host.
 
 ## Install
 
