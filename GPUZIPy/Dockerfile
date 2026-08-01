@@ -11,6 +11,7 @@ WORKDIR /GPUZIP
 COPY . /GPUZIP
 
 WORKDIR /GPUZIP/GPUZIPy
-RUN pip install /GPUZIP/GPUZIPy
+RUN pip install .
+RUN pip install -r example/requirements.txt
 
-CMD ["python", "example/main.py"]
+CMD ["python3", "example/main.py"]
