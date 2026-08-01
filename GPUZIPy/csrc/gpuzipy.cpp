@@ -5,9 +5,9 @@
  * @date Feb 24, 2024
  */
 #include <pybind11/pybind11.h>
-#include "../../src/Compressor/include/compressor_zfp.hpp"
-#include "../../src/Compressor/include/compressor_nvcomp_bitcomp.hpp"
-#include "../../src/Compressor/include/compressor_cuszp.hpp"
+#include "../../src/Compressor/include/CompressorZFP.hpp"
+#include "../../src/Compressor/include/CompressorBitcomp.hpp"
+#include "../../src/Compressor/include/CompressorCuSZp.hpp"
 
 #define STRINGIFY(x) #x
 #define MACRO_STRINGIFY(x) STRINGIFY(x)
@@ -23,7 +23,7 @@ namespace py = pybind11;
  *                         The allocated memory needs to meet the minimum size of compressed_buffer_size.
  *                         If you don't previously know the field to be compressed, you can use compressed_buffer_size.
  */
-std::size_t compress(compressor<void, void> *compressor, long d_uncompressed_ptr, long d_compressed_ptr)
+std::size_t compress(Compressor<void, void> *compressor, long d_uncompressed_ptr, long d_compressed_ptr)
 {
      void *d_uncompressed = reinterpret_cast<void *>(d_uncompressed_ptr);
      void *d_compressed = reinterpret_cast<void *>(d_compressed_ptr);
@@ -37,7 +37,7 @@ std::size_t compress(compressor<void, void> *compressor, long d_uncompressed_ptr
  * @param d_compressed_ptr Pointer to the compressed data (GPU memory pointer).
  * @param d_uncompressed_ptr Pointer to store the decompressed data (GPU memory pointer).
  */
-void decompress(compressor<void, void> *compressor, long d_compressed_ptr, long d_uncompressed_ptr, std::size_t compressed_size = -1)
+void decompress(Compressor<void, void> *compressor, long d_compressed_ptr, long d_uncompressed_ptr, std::size_t compressed_size = -1)
 {
      void *d_compressed = reinterpret_cast<void *>(d_compressed_ptr);
      void *d_uncompressed = reinterpret_cast<void *>(d_uncompressed_ptr);
@@ -50,41 +50,41 @@ void decompress(compressor<void, void> *compressor, long d_compressed_ptr, long 
  * @param compressor The compressor object.
  * @return std::size_t The maximum buffer size.
  */
-std::size_t compressed_buffer_max_size(compressor<void, void> *compressor)
+std::size_t compressed_buffer_max_size(Compressor<void, void> *compressor)
 {
-     return compressor->Compressed_buffer_max_size();
+     return compressor->CompressedMaxSize();
 }
 
 /**
  * @brief Get the actual compressed buffer size in bytes.
  *
  * @param compressor The compressor object.
- * @param d_uncompressed_ptr Pointer to the uncompressed data.
+ * @param d_compressed_ptr Pointer to the compressed data (GPU memory pointer), as written by compress().
  * @return std::size_t The compressed buffer size.
  */
-std::size_t compressed_buffer_size(compressor<void, void> *compressor, long d_uncompressed_ptr)
+std::size_t compressed_buffer_size(Compressor<void, void> *compressor, long d_compressed_ptr)
 {
-     void *d_uncompressed = reinterpret_cast<void *>(d_uncompressed_ptr);
-     return compressor->Compressed_buffer_size(d_uncompressed);
+     void *d_compressed = reinterpret_cast<void *>(d_compressed_ptr);
+     return compressor->CompressedBufferSize(d_compressed);
 }
 
 PYBIND11_MODULE(gpuzipy, m)
 {
      m.doc() = "GPUZIP Compressors."; // Module level documentation
 
-     py::class_<compressor<void, void>>(m, "Compressor");
+     py::class_<Compressor<void, void>>(m, "Compressor");
 
-     py::class_<compressor_zfp<void, void>, compressor<void, void>>(m, "CompressorZFP")
+     py::class_<CompressorZFP<void, void>, Compressor<void, void>>(m, "CompressorZFP")
          .def(py::init<std::size_t, std::size_t, std::size_t, const std::string &, double>(),
               "Initialize CompressorZFP object",
               py::arg("n1"), py::arg("n2"), py::arg("n3"), py::arg("float_kind"), py::arg("rate"));
 
-     py::class_<compressor_cuszp<void, void>, compressor<void, void>>(m, "CompressorCuszp")
+     py::class_<CompressorCuSZp<void, void>, Compressor<void, void>>(m, "CompressorCuszp")
          .def(py::init<std::size_t, std::size_t, std::size_t, double>(),
               "Initialize CompressorCuszp object",
               py::arg("n1"), py::arg("n2"), py::arg("n3"), py::arg("error_bound"));
 
-     py::class_<compressor_bitcomp<void, void>, compressor<void, void>>(m, "CompressorBitcomp")
+     py::class_<CompressorBitcomp<void, void>, Compressor<void, void>>(m, "CompressorBitcomp")
          .def(py::init<std::size_t, std::size_t, std::size_t,
                        const int, const double, const double, const double,
                        const std::string &, const std::string &>(),
@@ -119,11 +119,12 @@ PYBIND11_MODULE(gpuzipy, m)
 
      m.def("compress", &compress, R"pbdoc(
           Compress
-     )pbdoc");
+     )pbdoc", py::arg("compressor"), py::arg("d_uncompressed_ptr"), py::arg("d_compressed_ptr"));
 
      m.def("decompress", &decompress, R"pbdoc(
           Decompress
-     )pbdoc");
+     )pbdoc", py::arg("compressor"), py::arg("d_compressed_ptr"), py::arg("d_uncompressed_ptr"),
+          py::arg("compressed_size") = static_cast<std::size_t>(-1));
 
 #ifdef VERSION_INFO
      m.attr("__version__") = MACRO_STRINGIFY(VERSION_INFO);
