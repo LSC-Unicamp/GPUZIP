@@ -4,11 +4,11 @@ GPUZIP is a library designed to enhance checkpointing on GPUs by combining data 
 
 Supported compressors: [NVIDIA Bitcomp](https://developer.nvidia.com/nvcomp), [cuSZp](https://dl.acm.org/doi/10.1145/3581784.3607048), and [cuZFP](https://zfp.readthedocs.io/en/release1.0.1/execution.html#using-cuda).
 
-
 ## Tutorials & Documentation
 - [C++/CUDA Examples](docs/CppCudaExamples.md) - Information of how to include GPUZIP on your C++/CUDA project and how to call its API.
-- [Installing cuZFP](docs/InstallingCuZFP.md) - A brief information on how to install cuZFP on the machine to be used by GPUZIP (NVCOMP bitcomp and cuSZp do not need to be manually installed.)
-- [GPUZIPy - Python Package](docs/PythonExamples.md) - How to install and use GPUZIPy, a Python wrapper for GPUZIP (Compressor only).
+- [GPUZIPy - The GPUZIP Python Package](GPUZIPy/README.md) - How to install and use GPUZIPy, a Python wrapper for GPUZIP (Compressor only).
+- [![Test GPUZIPy In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/LSC-Unicamp/GPUZIP/blob/main/GPUZIPy/example/GPUZIPy_Example.ipynb) - Test GPUZIPy in Colab
+- [Installing cuZFP](docs/InstallingCuZFP.md) - Brief information on how to install cuZFP on the machine to be used by GPUZIP (NVCOMP bitcomp and cuSZp do not need to be manually installed.)
 - [Conference Paper (GPUZIP 1.0.0) (EuroPAR'2024)](https://doi.org/10.1007/978-3-031-69583-4_12)
 - [Article (GPUZIP 2.0.0) (IJHPCA)](https://doi.org/10.1177/10943420251340794)
 - [Repro Data & Dataset Input Data](https://doi.org/10.25824/redu/KJ9KVA)
