@@ -13,11 +13,16 @@ Input/output buffers are raw GPU device pointers (e.g. from [CuPy](https://cupy.
 
 ## Install
 
-Prebuilt wheels (Linux x86_64, Python 3.10-3.13, CUDA 12, GPUs from Volta/sm_70 to Hopper/sm_90):
+Prebuilt wheels (Linux x86_64, Python 3.10-3.13, CUDA 12, GPUs from Volta/sm_70 to Hopper/sm_90)
+are attached to the [GitHub Releases](https://github.com/LSC-Unicamp/GPUZIP/releases):
 
 ```sh
-pip install gpuzipy
+pip install gpuzipy --only-binary gpuzipy \
+    --find-links https://github.com/LSC-Unicamp/GPUZIP/releases/expanded_assets/gpuzipy-v2.1.0
 ```
+
+pip picks the wheel matching your Python version. `--only-binary` stops it from picking
+GitHub's auto-generated source archive listed on the same page.
 
 Only an NVIDIA driver supporting CUDA 12 is needed; nvcomp (Bitcomp), cuZFP and cuSZp are bundled.
 
@@ -53,8 +58,8 @@ With it, results land directly in `GPUZIPy/example/output/` on the host.
 
 `.github/workflows/gpuzipy-wheels.yml` builds the wheels with cibuildwheel (config in
 `pyproject.toml`). Bump `version` in `setup.py`, then push a matching tag, e.g.
-`git tag gpuzipy-v0.0.2 && git push origin gpuzipy-v0.0.2`, to publish a GitHub Release and
-upload to PyPI.
+`git tag gpuzipy-v2.1.1 && git push origin gpuzipy-v2.1.1`, to publish a GitHub Release with
+the wheels. Then update the `--find-links` tag above and in the example notebook.
 
 ## License
 

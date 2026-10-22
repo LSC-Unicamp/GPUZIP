@@ -74,7 +74,7 @@ class SDist(sdist):
 # logic and declaration, and simpler if you include description/version in a file.
 setup(
     name="gpuzipy",
-    version="0.0.1",
+    version="2.1.0",
     author="Thiago Maltempi",
     author_email="maltempi@ic.unicamp.br",
     description="Python bindings for GPUZIP's GPU compression layer (Bitcomp, cuZFP, cuSZp).",
