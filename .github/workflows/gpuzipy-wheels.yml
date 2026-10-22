@@ -1,0 +1,72 @@
+name: GPUZIPy wheels
+
+# Builds manylinux CUDA 12 wheels for GPUZIPy (no GPU needed to compile).
+#  - Manual run / PRs touching the bindings: build only, wheels kept as workflow artifacts.
+#  - Tag "gpuzipy-v*" (e.g. gpuzipy-v0.0.1): build, attach to a GitHub Release, publish to PyPI.
+#    The tag must match the version in GPUZIPy/setup.py.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "GPUZIPy/**"
+      - "src/Compressor/**"
+      - ".github/workflows/gpuzipy-wheels.yml"
+  push:
+    tags:
+      - "gpuzipy-v*"
+
+jobs:
+  wheels:
+    name: Wheel ${{ matrix.python }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: [cp310, cp311, cp312, cp313]
+    steps:
+      - uses: actions/checkout@v4
+
+      # cibuildwheel copies the whole repo into the container; GPUZIPy's CMake build
+      # reads ../src/Compressor from there.
+      - uses: pypa/cibuildwheel@v2.23.3
+        with:
+          package-dir: GPUZIPy
+          output-dir: wheelhouse
+        env:
+          CIBW_BUILD: ${{ matrix.python }}-manylinux_x86_64
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheel-${{ matrix.python }}
+          path: wheelhouse/*.whl
+
+  sdist:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pipx run build --sdist --outdir dist GPUZIPy
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sdist
+          path: dist/*.tar.gz
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/gpuzipy-v')
+    needs: [wheels, sdist]
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      contents: write   # GitHub Release
+      id-token: write   # PyPI trusted publishing
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+
+      - uses: pypa/gh-action-pypi-publish@release/v1
