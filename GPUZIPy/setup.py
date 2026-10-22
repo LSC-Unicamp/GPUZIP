@@ -1,4 +1,5 @@
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -6,6 +7,7 @@ from pathlib import Path
 import pybind11
 from setuptools import Extension, setup
 from setuptools.command.build_ext import build_ext
+from setuptools.command.sdist import sdist
 
 HERE = Path(__file__).parent.resolve()
 LONG_DESCRIPTION = (HERE / "README.md").read_text(encoding="utf-8")
@@ -28,7 +30,7 @@ class CMakeBuild(build_ext):
 
         build_args = []
         cmake_args = [
-            f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={extdir}{os.sep}",
+            f"-DGPUZIPY_OUTPUT_DIR={extdir}{os.sep}",
             f"-DPYTHON_EXECUTABLE={sys.executable}",
             f"-DCMAKE_BUILD_TYPE={cfg}",
             f"-Dpybind11_DIR={pybind11.get_cmake_dir()}",
@@ -54,6 +56,18 @@ class CMakeBuild(build_ext):
         subprocess.run(
             ["cmake", "--build", ".", *build_args], cwd=build_temp, check=True
         )
+
+
+class SDist(sdist):
+    """Bundle GPUZIP's compressor sources (../src/Compressor), which live outside this
+    package directory, so the sdist builds on its own. CMakeLists.txt falls back to
+    ./gpuzip_src when ../src is absent."""
+
+    def make_release_tree(self, base_dir, files):
+        super().make_release_tree(base_dir, files)
+        src = HERE.parent / "src" / "Compressor"
+        if src.is_dir():
+            shutil.copytree(src, Path(base_dir) / "gpuzip_src" / "Compressor")
 
 
 # The information here can also be placed in setup.cfg - better separation of
@@ -84,7 +98,7 @@ setup(
         "Environment :: GPU :: NVIDIA CUDA",
     ],
     ext_modules=[CMakeExtension("gpuzipy")],
-    cmdclass={"build_ext": CMakeBuild},
+    cmdclass={"build_ext": CMakeBuild, "sdist": SDist},
     zip_safe=False,
     extras_require={
         "test": ["pytest>=6.0"],

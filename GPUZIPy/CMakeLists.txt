@@ -50,7 +50,7 @@ set(BUILD_CUDA ON CACHE BOOL "Build cuszp with CUDA support")
 FetchContent_Declare(
     cuszp
     GIT_REPOSITORY https://github.com/szcompressor/cuSZp.git
-    GIT_TAG cuSZp-V3.0.0
+    GIT_TAG master
 )
 FetchContent_MakeAvailable(cuszp)
 
@@ -85,18 +85,32 @@ find_package(nvcomp REQUIRED)
 find_package(pybind11 CONFIG REQUIRED)
 include_directories(${ZFP_SOURCE_DIR}/include ${NVCOMP_SRC_DIR}/include)
 
+# GPUZIP's compressor sources. In a git checkout they live in ../src; in an sdist,
+# setup.py copies them into ./gpuzip_src (see its sdist command).
+if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/../src/Compressor)
+  set(GPUZIP_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../src)
+else()
+  set(GPUZIP_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/gpuzip_src)
+endif()
+
 # cuda_utils.cu: GPU min/max/mean/std reductions used by CompressorBitcomp/CompressorCuSZp.
 # Declared in src/Compressor/include/cuda_utils.hpp but defined separately, so it must be
 # compiled and linked in explicitly (it is not part of the header-only Compressor include tree).
 add_library(gpuzip_cuda_utils STATIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Compressor/cuda_utils.cu)
+    ${GPUZIP_SRC_DIR}/Compressor/cuda_utils.cu)
 target_include_directories(gpuzip_cuda_utils PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Compressor/include
+    ${GPUZIP_SRC_DIR}/Compressor/include
     ${CUDAToolkit_INCLUDE_DIRS})
 target_link_libraries(gpuzip_cuda_utils PUBLIC Thrust)
 
 pybind11_add_module(gpuzipy ./csrc/gpuzipy.cpp)
 target_include_directories(gpuzipy PRIVATE ${CUDAToolkit_INCLUDE_DIRS})
+# Only the extension module goes to setup.py's output dir. zfp/cuSZp/nvcomp shared
+# libraries stay in the build tree (found via the build RPATH); when building release
+# wheels, auditwheel copies them into the wheel.
+if (DEFINED GPUZIPY_OUTPUT_DIR)
+  set_target_properties(gpuzipy PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${GPUZIPY_OUTPUT_DIR})
+endif()
 # cuSZp_shared, not cuSZp_static: cuSZp is built with relocatable device code, and
 # gpuzipy (a pybind11 MODULE target with no .cu sources of its own) can't reliably
 # get CMake's device-link step to resolve it. cuSZp_shared is a real CUDA SHARED
@@ -106,9 +120,7 @@ target_link_libraries(gpuzipy
   gpuzip_cuda_utils
   zfp::zfp
   cuSZp_shared
-  nvcomp::nvcomp
-  -lcuda
-  -lcusparse)
+  nvcomp::nvcomp)
 
 target_compile_definitions(gpuzipy
                           PRIVATE VERSION_INFO=${VERSION_INFO})

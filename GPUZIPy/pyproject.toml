@@ -1,3 +1,24 @@
 [build-system]
 requires = ["setuptools>=64", "wheel", "cmake>=3.22", "pybind11>=2.11"]
 build-backend = "setuptools.build_meta"
+
+# Release wheels: built with cibuildwheel inside manylinux_2_28 (AlmaLinux 8) with the
+# CUDA toolkit installed. See .github/workflows/gpuzipy-wheels.yml.
+[tool.cibuildwheel]
+build = "cp310-* cp311-* cp312-* cp313-*"
+skip = "*-musllinux_*"
+archs = ["x86_64"]
+manylinux-x86_64-image = "manylinux_2_28"
+build-verbosity = 1
+
+[tool.cibuildwheel.linux]
+before-all = [
+    "dnf install -y dnf-plugins-core",
+    "dnf config-manager --add-repo https://developer.download.nvidia.com/compute/cuda/repos/rhel8/x86_64/cuda-rhel8.repo",
+    "dnf install -y cuda-nvcc-12-4 cuda-cudart-devel-12-4 cuda-nvtx-12-4 cuda-cccl-12-4 gcc-toolset-13-gcc-c++",
+]
+environment = { PATH = "/opt/rh/gcc-toolset-13/root/usr/bin:/usr/local/cuda/bin:$PATH", CC = "/opt/rh/gcc-toolset-13/root/usr/bin/gcc", CXX = "/opt/rh/gcc-toolset-13/root/usr/bin/g++", CUDACXX = "/usr/local/cuda/bin/nvcc", CMAKE_BUILD_PARALLEL_LEVEL = "4", CMAKE_ARGS = "'-DCMAKE_CUDA_ARCHITECTURES=70-real;75-real;80-real;86-real;89-real;90'" }
+# GCC 13 toolset first in PATH: CUDA 12.4's nvcc rejects the image's default GCC 14.
+# CUDA 12.4 is kept (not 12.8+, which supports GCC 14) so the wheel runs on older drivers.
+# libcuda.so.1 is the GPU driver: it must come from the user's system, never the wheel.
+repair-wheel-command = "auditwheel repair --exclude libcuda.so.1 -w {dest_dir} {wheel}"

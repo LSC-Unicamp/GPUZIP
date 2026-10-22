@@ -11,14 +11,29 @@ Input/output buffers are raw GPU device pointers (e.g. from [CuPy](https://cupy.
 
 > **Note:** Only the `Compressor` component is bound to Python. GPUZIP's `Prefetch`/checkpointing layer is C++/CUDA only.
 
-## Requirements
+## Install
 
-This package has no prebuilt wheels: installing it compiles NVIDIA Bitcomp (nvcomp), cuZFP,
-and cuSZp against your local CUDA toolkit.
+Prebuilt wheels (Linux x86_64, Python 3.10-3.13, CUDA 12, GPUs from Volta/sm_70 to Hopper/sm_90):
 
-- NVIDIA CUDA and NVCC (nvcc: NVIDIA (R) Cuda compiler driver Copyright (c) 2005-2023 NVIDIA Corporation Built on Tue_Aug_15_22:02:13_PDT_2023 Cuda compilation tools, release 12.2, V12.2.140 Build cuda_12.2.r12.2/compiler.33191640_0)
+```sh
+pip install gpuzipy
+```
+
+Only an NVIDIA driver supporting CUDA 12 is needed; nvcomp (Bitcomp), cuZFP and cuSZp are bundled.
+
+### Build from source
+
+Compiles NVIDIA Bitcomp (nvcomp), cuZFP, and cuSZp against your local CUDA toolkit.
+
+- NVIDIA CUDA and NVCC (tested with CUDA 12.2)
 - CMake >= 3.22
 - Internet access at install time (build-time dependencies are fetched automatically: Thrust, ZFP, cuSZp, nvcomp)
+
+```sh
+pip install .
+```
+
+Set `CMAKE_ARGS="-DCMAKE_CUDA_ARCHITECTURES=native"` to compile only for the local GPU.
 
 ## Run the examples with Docker
 
@@ -34,11 +49,12 @@ The container is removed after it exits (`--rm`), so without that volume mount t
 rendered PSNR/SSIM slice comparisons in `example/output/` would be lost along with it.
 With it, results land directly in `GPUZIPy/example/output/` on the host.
 
-## Install
+## Releasing wheels
 
-```sh
-pip install .
-```
+`.github/workflows/gpuzipy-wheels.yml` builds the wheels with cibuildwheel (config in
+`pyproject.toml`). Bump `version` in `setup.py`, then push a matching tag, e.g.
+`git tag gpuzipy-v0.0.2 && git push origin gpuzipy-v0.0.2`, to publish a GitHub Release and
+upload to PyPI.
 
 ## License
 
