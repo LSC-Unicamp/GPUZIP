@@ -18,7 +18,7 @@ are attached to the [GitHub Releases](https://github.com/LSC-Unicamp/GPUZIP/rele
 
 ```sh
 pip install gpuzipy --only-binary gpuzipy \
-    --find-links https://github.com/LSC-Unicamp/GPUZIP/releases/expanded_assets/gpuzipy-v2.1.0
+    --find-links https://github.com/LSC-Unicamp/GPUZIP/releases/expanded_assets/2.1.0
 ```
 
 pip picks the wheel matching your Python version. `--only-binary` stops it from picking
@@ -56,10 +56,11 @@ With it, results land directly in `GPUZIPy/example/output/` on the host.
 
 ## Releasing wheels
 
-`.github/workflows/gpuzipy-wheels.yml` builds the wheels with cibuildwheel (config in
-`pyproject.toml`). Bump `version` in `setup.py`, then push a matching tag, e.g.
-`git tag gpuzipy-v2.1.1 && git push origin gpuzipy-v2.1.1`, to publish a GitHub Release with
-the wheels. Then update the `--find-links` tag above and in the example notebook.
+`.github/workflows/release.yml` builds the wheels with cibuildwheel (config in
+`pyproject.toml`). Bump `version` in `setup.py`, merge, then push a matching tag, e.g.
+`git tag 2.1.1 && git push origin 2.1.1`. This creates one GitHub Release with the Python
+wheels and the C++ header-only package. Then update the `--find-links` tag above and in the
+example notebook.
 
 ## License
 
