@@ -12,6 +12,7 @@ Supported compressors: [NVIDIA Bitcomp](https://developer.nvidia.com/nvcomp), [c
 - [Conference Paper (GPUZIP 1.0.0) (EuroPAR'2024)](https://doi.org/10.1007/978-3-031-69583-4_12)
 - [Article (GPUZIP 2.0.0) (IJHPCA)](https://doi.org/10.1177/10943420251340794)
 - [Repro Data & Dataset Input Data](https://doi.org/10.25824/redu/KJ9KVA)
+- [Compressing Scientific Data Tutorial (SSCAD'26)](https://github.com/brunoortega/minicurso_sscad_2026)
 
 ## This Repository Structure
 ```
