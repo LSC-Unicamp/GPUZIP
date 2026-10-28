@@ -7,6 +7,7 @@
 #include "../common/structs.h"
 
 #include <chrono>
+#include <exception>
 #include <cuda_runtime.h>
 #include <iostream>
 #include <map>
@@ -87,6 +88,41 @@ protected:
           (double)raw / size, raw, (double)raw / size);
     }
     exit(1);
+  }
+
+  /**
+   * @brief Compresses `field` into the cache slot `slot` and checks that the
+   *        result fits.
+   *
+   * The compressors take no output capacity, so a field that compresses worse
+   * than `CompressionFactor` is written past the slot. A small overflow is
+   * caught by checkFits(); a large one can corrupt device memory badly enough
+   * for the compressor itself to fail, so its exceptions get the same context.
+   */
+  void compressInto(Compressor<void, void> *comp, Field_t *field,
+                    Field_t *slot, unsigned timestep, int type) {
+    try {
+      slot->size = comp->Compress(field->data, slot->data);
+    } catch (const std::exception &e) {
+      int dev;
+      cudaGetDevice(&dev);
+      GPUZIPLogger::Error(
+          "\nGPUZIP error [DEVICE=%i] compression into the GPU cache: the "
+          "compressor failed (%s) on the %s field of timestep %u, compressing "
+          "%zu bytes into a checkpoint slot of %zu bytes.\n",
+          dev, e.what(), type == 0 ? "current" : "previous", timestep,
+          (size_t)(slot->n1 * slot->n2 * slot->n3 * sizeof(float)),
+          slot->capacity);
+      GPUZIPLogger::Error(
+          "The likely cause is a field that compresses worse than the "
+          "CompressionFactor used to size the slots, written past its slot. "
+          "Lower CompressionFactor (with several GPUs it must hold for every "
+          "sub-domain), or use 0 to size the slots by the compressor's worst "
+          "case.\n");
+      exit(1);
+    }
+    checkFits(slot->capacity, slot, timestep, type,
+              "compression into the GPU cache");
   }
 
   /**
@@ -447,16 +483,8 @@ protected:
     walk(timestep);
     cache->push(timestep, curr, prev, 0);
 
-    // The compressors take no output capacity: check right after each call.
-    cache->getCurrTop()->size =
-        compcurr->Compress(curr->data, cache->getCurrTop()->data);
-    checkFits(cache->getCurrTop()->capacity, cache->getCurrTop(), timestep, 0,
-              "compression into the GPU cache");
-
-    cache->getPrevTop()->size =
-        compprev->Compress(prev->data, cache->getPrevTop()->data);
-    checkFits(cache->getPrevTop()->capacity, cache->getPrevTop(), timestep, 1,
-              "compression into the GPU cache");
+    compressInto(compcurr, curr, cache->getCurrTop(), timestep, 0);
+    compressInto(compprev, prev, cache->getPrevTop(), timestep, 1);
 
     curr->size = cache->getCurrTop()->size;
     prev->size = cache->getPrevTop()->size;

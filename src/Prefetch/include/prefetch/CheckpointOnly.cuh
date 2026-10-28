@@ -42,6 +42,8 @@ protected:
               "copy to the host pool");
     checkFits(pool.prevs[pool.top].capacity, prev, timestep, 1,
               "copy to the host pool");
+    recordStored(curr);
+    recordStored(prev);
 
     copyMetadata(&(pool.currs[pool.top]), curr);
     GPUZIP_CUDA_CHECK(cudaMemcpyAsync(pool.currs[pool.top].data, curr->data,
