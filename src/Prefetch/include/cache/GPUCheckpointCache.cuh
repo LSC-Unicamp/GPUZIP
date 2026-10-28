@@ -175,8 +175,11 @@ public:
       if (maxChkptLen > 0) {
         cudaStreamCreate(&pci[i]);
         cudaStreamCreate(&d2d[i]);
-        GPUZIP_CUDA_CHECK(cudaMalloc(&(currs[i].data), maxChkptLen));
-        GPUZIP_CUDA_CHECK(cudaMalloc(&(prevs[i].data), maxChkptLen));
+        const size_t slot = GPUZIPSlotCapacity(maxChkptLen);
+        GPUZIP_CUDA_CHECK(cudaMalloc(&(currs[i].data), slot));
+        GPUZIP_CUDA_CHECK(cudaMalloc(&(prevs[i].data), slot));
+        currs[i].capacity = slot;
+        prevs[i].capacity = slot;
       }
     }
   }
@@ -307,7 +310,7 @@ public:
 
       if (maxChkptLen > 0) {
         copyField(&currs[lru], curr);
-        copyField(&prevs[lru], curr);
+        copyField(&prevs[lru], prev);
       }
 
       timesteps[lru] = timestep;
