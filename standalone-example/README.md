@@ -165,7 +165,8 @@ log_level = 1
 | `compressor = 2` + `bitcomp_delta = 1e-8` | Bitcomp, 100–300× ratio (data-dependent) |
 | `cache_capacity = 0` | Disable prefetching (synchronous H↔D transfers) |
 | `cache_capacity = 4` | LRU cache with 4 GPU slots (recommended for Revolve) |
-| `compression_factor = 2.6` | Skip warm-up; pre-specify worst-case compression ratio |
+| `compression_factor = 2.6` | Size the pool and cache slots for this worst-case compression ratio (memory per slot = field size / factor). A field that compresses worse stops the run with an error; with several GPUs the ratio must hold for every sub-domain |
+| `compression_factor = 0` | Size the slots by the compressor's worst case (`CompressedMaxSize()`): always fits, uses more memory |
 
 ---
 

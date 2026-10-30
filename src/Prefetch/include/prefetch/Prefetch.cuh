@@ -7,6 +7,7 @@
 #include "../common/structs.h"
 
 #include <chrono>
+#include <exception>
 #include <cuda_runtime.h>
 #include <iostream>
 #include <map>
@@ -43,6 +44,103 @@ protected:
   int actualMissesCount = 0;
   int hitsCount = 0;
   int prefetchCount = 0;
+  size_t slot_capacity = 0;  ///< Bytes allocated per pool/cache slot.
+  size_t largest_stored = 0; ///< Largest (compressed) field saved so far.
+  double min_ratio = 0.0;    ///< Smallest compression ratio seen so far.
+
+  /**
+   * @brief Stops the run if `field` does not fit in a GPUZIP-owned slot (a
+   *        pool or cache slot) of `capacity` bytes.
+   *
+   * Pool and cache slots are sized from `CompressionFactor`; a field that
+   * compresses worse than that does not fit. Called before every copy into a
+   * slot, and right after compressing into a cache slot: there the compressor
+   * has already written `field->size` bytes, possibly past the slot, so the
+   * run cannot go on safely.
+   *
+   * @param capacity Bytes allocated for the destination slot.
+   * @param field The field to store (its size and dimensions are used).
+   * @param timestep The timestep of the field.
+   * @param type 0 for the current field, 1 for the previous one.
+   * @param where Name of the operation, for the message.
+   */
+  void checkFits(size_t capacity, const Field_t *field, unsigned timestep,
+                 int type, const char *where) {
+    const size_t size = field->size;
+    if (size <= capacity) {
+      return;
+    }
+    int dev;
+    cudaGetDevice(&dev);
+    const size_t raw = field->n1 * field->n2 * field->n3 * sizeof(float);
+    GPUZIPLogger::Error(
+        "\nGPUZIP error [DEVICE=%i] %s: the %s field of timestep %u needs %zu "
+        "bytes but a checkpoint slot holds %zu bytes.\n",
+        dev, where, type == 0 ? "current" : "previous", timestep, size,
+        capacity);
+    if (compression && size < raw) {
+      GPUZIPLogger::Error(
+          "It compressed %.3fx (uncompressed %zu bytes), less than the "
+          "CompressionFactor used to size the slots. Use a CompressionFactor "
+          "below %.3f (with some margin; with several GPUs it must hold for "
+          "every sub-domain), or 0 to size the slots by the compressor's "
+          "worst case.\n",
+          (double)raw / size, raw, (double)raw / size);
+    }
+    exit(1);
+  }
+
+  /**
+   * @brief Compresses `field` into the cache slot `slot` and checks that the
+   *        result fits.
+   *
+   * The compressors take no output capacity, so a field that compresses worse
+   * than `CompressionFactor` is written past the slot. A small overflow is
+   * caught by checkFits(); a large one can corrupt device memory badly enough
+   * for the compressor itself to fail, so its exceptions get the same context.
+   */
+  void compressInto(Compressor<void, void> *comp, Field_t *field,
+                    Field_t *slot, unsigned timestep, int type) {
+    try {
+      slot->size = comp->Compress(field->data, slot->data);
+    } catch (const std::exception &e) {
+      int dev;
+      cudaGetDevice(&dev);
+      GPUZIPLogger::Error(
+          "\nGPUZIP error [DEVICE=%i] compression into the GPU cache: the "
+          "compressor failed (%s) on the %s field of timestep %u, compressing "
+          "%zu bytes into a checkpoint slot of %zu bytes.\n",
+          dev, e.what(), type == 0 ? "current" : "previous", timestep,
+          (size_t)(slot->n1 * slot->n2 * slot->n3 * sizeof(float)),
+          slot->capacity);
+      GPUZIPLogger::Error(
+          "The likely cause is a field that compresses worse than the "
+          "CompressionFactor used to size the slots, written past its slot. "
+          "Lower CompressionFactor (with several GPUs it must hold for every "
+          "sub-domain), or use 0 to size the slots by the compressor's worst "
+          "case.\n");
+      exit(1);
+    }
+    checkFits(slot->capacity, slot, timestep, type,
+              "compression into the GPU cache");
+  }
+
+  /**
+   * @brief Records the size of a field stored in a slot (for Report()).
+   */
+  void recordStored(const Field_t *field) {
+    if (field->size > largest_stored) {
+      largest_stored = field->size;
+    }
+    if (compression && field->size > 0) {
+      const double ratio =
+          (double)(field->n1 * field->n2 * field->n3 * sizeof(float)) /
+          field->size;
+      if (min_ratio == 0.0 || ratio < min_ratio) {
+        min_ratio = ratio;
+      }
+    }
+  }
 
   /**
    * @brief Sets up the prefetching algorithm.
@@ -263,6 +361,14 @@ protected:
    *        the host pool.
    */
   virtual void cache2host(cudaStream_t stream) {
+    const unsigned timestep = pool.timestep[pool.top];
+    checkFits(pool.currs[pool.top].capacity, cache->getCurrTop(), timestep, 0,
+              "copy to the host pool");
+    checkFits(pool.prevs[pool.top].capacity, cache->getPrevTop(), timestep, 1,
+              "copy to the host pool");
+    recordStored(cache->getCurrTop());
+    recordStored(cache->getPrevTop());
+
     copyMetadata(&(pool.currs[pool.top]), cache->getCurrTop());
     GPUZIP_CUDA_CHECK(
         cudaMemcpyAsync(pool.currs[pool.top].data, cache->getCurrTop()->data,
@@ -373,22 +479,20 @@ protected:
                     Compressor<void, void> *compcurr,
                     Compressor<void, void> *compprev) {
 
+    compression = true;
     walk(timestep);
     cache->push(timestep, curr, prev, 0);
 
-    cache->getCurrTop()->size =
-        compcurr->Compress(curr->data, cache->getCurrTop()->data);
-
-    cache->getPrevTop()->size =
-        compcurr->Compress(prev->data, cache->getPrevTop()->data);
+    compressInto(compcurr, curr, cache->getCurrTop(), timestep, 0);
+    compressInto(compprev, prev, cache->getPrevTop(), timestep, 1);
 
     curr->size = cache->getCurrTop()->size;
     prev->size = cache->getPrevTop()->size;
 
-    cache2host(cache->getPciTop());
-
     GPUZIPLogger::LogCompressionMetrics(curr, timestep, 0);
     GPUZIPLogger::LogCompressionMetrics(prev, timestep, 1);
+
+    cache2host(cache->getPciTop());
 
     GPUZIPLogger::Debug("After Save: ts=%i ", timestep);
     if (GPUZIPLogger::GetLevel() == GPUZIPLogger::DEBUG) {
@@ -424,6 +528,11 @@ protected:
     }
 
     cudaStream_t d2d = cache->getD2DTop();
+
+    checkFits(cache->getCurrTop()->capacity, curr, timestep, 0,
+              "copy to the GPU cache");
+    checkFits(cache->getPrevTop()->capacity, prev, timestep, 1,
+              "copy to the GPU cache");
 
     GPUZIP_CUDA_CHECK(cudaMemcpyAsync(cache->getCurrTop()->data, curr->data,
                                       curr->size, cudaMemcpyDefault, d2d));
@@ -567,6 +676,11 @@ protected:
         exit(1);
       }
 
+      checkFits(cache->getCurrTop()->capacity, curr, timestep, 0,
+                "copy to the GPU cache");
+      checkFits(cache->getPrevTop()->capacity, prev, timestep, 1,
+                "copy to the GPU cache");
+
       GPUZIP_CUDA_CHECK(cudaMemcpyAsync(cache->getCurrTop()->data, curr->data,
                                         curr->size, cudaMemcpyDefault, d2d));
 
@@ -690,6 +804,11 @@ protected:
         exit(1);
       }
 
+      checkFits(cache->getCurrTop()->capacity, &(pool.currs[pool.top]),
+                timestep, 0, "copy from the host pool to the GPU cache");
+      checkFits(cache->getPrevTop()->capacity, &(pool.prevs[pool.top]),
+                timestep, 1, "copy from the host pool to the GPU cache");
+
       GPUZIP_CUDA_CHECK(
           cudaMemcpyAsync(cache->getCurrTop()->data, pool.currs[pool.top].data,
                           pool.currs[pool.top].size, cudaMemcpyDefault, pci));
@@ -761,6 +880,11 @@ protected:
                         &(pool.prevs[pool_idx]), pos, true, 0);
 
         cudaStream_t pci = cache->getPciAt(pos);
+
+        checkFits(cache->getCurrFieldAt(pos)->capacity, &(pool.currs[pool_idx]),
+                  timestep, 0, "prefetch to the GPU cache");
+        checkFits(cache->getPrevFieldAt(pos)->capacity, &(pool.prevs[pool_idx]),
+                  timestep, 1, "prefetch to the GPU cache");
 
         GPUZIP_CUDA_CHECK(cudaMemcpyAsync(
             cache->getCurrFieldAt(pos)->data, pool.currs[pool_idx].data,
@@ -864,12 +988,14 @@ public:
         cudaMallocHost(&(pool.prevs), numSnaps * sizeof(Field_t)));
     GPUZIP_CUDA_CHECK(cudaMallocHost(&(pool.timestep), numSnaps * sizeof(int)));
 
+    // Same capacity as the cache slots (see GPUZIPSlotCapacity).
+    slot_capacity = GPUZIPSlotCapacity(biggest_checkpoint_len);
     for (unsigned p = 0; p < pool.size; p++) {
       pool.timestep[p] = -1;
-      GPUZIP_CUDA_CHECK(
-          cudaMallocHost(&(pool.currs[p].data), biggest_checkpoint_len));
-      GPUZIP_CUDA_CHECK(
-          cudaMallocHost(&(pool.prevs[p].data), biggest_checkpoint_len));
+      GPUZIP_CUDA_CHECK(cudaMallocHost(&(pool.currs[p].data), slot_capacity));
+      GPUZIP_CUDA_CHECK(cudaMallocHost(&(pool.prevs[p].data), slot_capacity));
+      pool.currs[p].capacity = slot_capacity;
+      pool.prevs[p].capacity = slot_capacity;
     }
 
     GPUZIPLogger::PerfTrace(
@@ -879,19 +1005,18 @@ public:
         "[GPUZIP_RESOURCES][DEVICE=%i] Checkpoint Pool Size: %i\n", dev,
         pool.size);
     GPUZIPLogger::PerfTrace(
-        "[GPUZIP_RESOURCES][DEVICE=%i] Field max len: %lu (MB)\n", dev,
-        (double)biggest_checkpoint_len / 1000000.0);
+        "[GPUZIP_RESOURCES][DEVICE=%i] Field max len: %.2lf (MB), slot "
+        "capacity: %.2lf (MB)\n",
+        dev, (double)biggest_checkpoint_len / 1000000.0,
+        (double)slot_capacity / 1000000.0);
     GPUZIPLogger::PerfTrace(
         "[MEM_TRACK][GPU][DEVICE=%i][GPUZIP__CACHE] %.2lf (MB)\n", dev,
-        ((double)((biggest_checkpoint_len + biggest_checkpoint_len) *
-                  cache->getCapacity())) /
+        ((double)((slot_capacity + slot_capacity) * cache->getCapacity())) /
             1000000.0);
     GPUZIPLogger::PerfTrace(
         "[MEM_TRACK][HOST][DEVICE=%i][GPUZIP__CHECKPOINT_POOL] %.2lf (GB)\n",
         dev,
-        (double)((biggest_checkpoint_len + biggest_checkpoint_len) *
-                 pool.size) /
-            1000000000.0);
+        (double)((slot_capacity + slot_capacity) * pool.size) / 1000000000.0);
   }
 
   void Report() {
@@ -899,6 +1024,14 @@ public:
     fprintf(stderr, "Number of hits (prefetch+hits): %i \n", hitsCount);
     fprintf(stderr, "Number of unavoidable misses: %i \n", actualMissesCount);
     fprintf(stderr, "Number of prefetched checkpoints: %i \n", prefetchCount);
+    if (slot_capacity > 0) {
+      fprintf(stderr, "Largest stored field: %zu of %zu bytes per slot (%.1f%%)\n",
+              largest_stored, slot_capacity,
+              100.0 * (double)largest_stored / slot_capacity);
+    }
+    if (compression && min_ratio > 0.0) {
+      fprintf(stderr, "Minimum compression ratio: %.3f\n", min_ratio);
+    }
     fprintf(stderr, "=====================================================\n");
   }
 

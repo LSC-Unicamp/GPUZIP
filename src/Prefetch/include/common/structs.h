@@ -24,6 +24,9 @@ typedef struct {
   size_t n1;   ///< Dimension 1 size.
   size_t n2;   ///< Dimension 2 size.
   size_t n3;   ///< Dimension 3 size.
+  size_t capacity; ///< Bytes allocated behind `data`. Set and checked only for
+                   ///< the buffers GPUZIP allocates (pool and cache slots);
+                   ///< application fields may leave it uninitialized.
 } Field_t;
 
 /**

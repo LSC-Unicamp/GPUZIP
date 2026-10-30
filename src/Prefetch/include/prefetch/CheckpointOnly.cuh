@@ -38,6 +38,13 @@ protected:
   bool save(int timestep, Field_t *curr, Field_t *prev) override {
     walk(timestep);
 
+    checkFits(pool.currs[pool.top].capacity, curr, timestep, 0,
+              "copy to the host pool");
+    checkFits(pool.prevs[pool.top].capacity, prev, timestep, 1,
+              "copy to the host pool");
+    recordStored(curr);
+    recordStored(prev);
+
     copyMetadata(&(pool.currs[pool.top]), curr);
     GPUZIP_CUDA_CHECK(cudaMemcpyAsync(pool.currs[pool.top].data, curr->data,
                                       curr->size, cudaMemcpyDefault,
