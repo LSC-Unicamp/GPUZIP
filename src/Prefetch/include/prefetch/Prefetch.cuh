@@ -40,6 +40,9 @@ protected:
   unsigned timesteps;
   size_t biggest_checkpoint_len;
   Streams_t streams;
+  /// Recorded on the caller's stream by the Retrieve without compressor, so the
+  /// cache streams wait for the work the caller queued before it.
+  cudaEvent_t caller_done;
   Checkpointing *chkpt;
   int actualMissesCount = 0;
   int hitsCount = 0;
@@ -590,6 +593,11 @@ protected:
       cudaStream_t pci = cache->getPciAt(hit_index);
       cudaStream_t d2d = cache->getD2DAt(hit_index);
 
+      // The caller's work on `stream` may still use curr and prev: overwrite
+      // them only after it.
+      GPUZIP_CUDA_CHECK(cudaEventRecord(caller_done, stream));
+      GPUZIP_CUDA_CHECK(cudaStreamWaitEvent(d2d, caller_done, 0));
+
       if (cache->isPrefetched(hit_index)) {
         // wait for prefetching action get completed if it still transfering...
         prefetchCount++;
@@ -655,6 +663,10 @@ protected:
 
       cudaStream_t pci = cache->getPciTop();
       cudaStream_t d2d = cache->getD2DTop();
+
+      // As on a hit: the caller's work on `stream` goes first.
+      GPUZIP_CUDA_CHECK(cudaEventRecord(caller_done, stream));
+      GPUZIP_CUDA_CHECK(cudaStreamWaitEvent(pci, caller_done, 0));
 
       // It is not in local cache, so bring it from Host Mem
       copyMetadata(curr, &(pool.currs[pool.top]));
@@ -918,6 +930,7 @@ protected:
    */
   void free() {
     cudaStreamDestroy(streams.cache2host);
+    cudaEventDestroy(caller_done);
 
     for (unsigned p = 0; p < pool.size; p++) {
       if (pool.currs[p].data != NULL) {
@@ -976,6 +989,8 @@ public:
      * Streams
      */
     cudaStreamCreate(&streams.cache2host);
+    GPUZIP_CUDA_CHECK(
+        cudaEventCreateWithFlags(&caller_done, cudaEventDisableTiming));
 
     /**
      * Checkpoint pool (host)
@@ -1174,7 +1189,8 @@ public:
    * otherwise.
    *
    * @note This variant of `Retrieve` allows for concurrent execution with other
-   * GPU tasks.
+   * GPU tasks. The copies into `curr` and `prev` start only after the work
+   * already queued on `stream`, which may still be using them.
    */
   virtual bool Retrieve(int timestep, Field_t *curr, Field_t *prev,
                         cudaStream_t stream) {
