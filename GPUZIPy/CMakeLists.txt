@@ -21,14 +21,14 @@ message("CMAKE_PREFIX_PATH:${CMAKE_PREFIX_PATH}")
 ##
 ## Thrust dependency
 ##
-FetchContent_Declare(
-    THRUST
-    GIT_REPOSITORY https://github.com/NVIDIA/thrust.git
-    GIT_TAG 2.0.1
-)
-FetchContent_MakeAvailable(THRUST)
-thrust_create_target(Thrust)
-find_package(Thrust REQUIRED CONFIG)
+# FetchContent_Declare(
+#     THRUST
+#     GIT_REPOSITORY https://github.com/NVIDIA/thrust.git
+#     GIT_TAG 2.0.1
+# )
+# FetchContent_MakeAvailable(THRUST)
+# thrust_create_target(Thrust)
+# find_package(Thrust REQUIRED CONFIG)
 
 ##
 ## cuZFP / zfp dependency
@@ -38,7 +38,8 @@ set(BUILD_CUDA ON CACHE BOOL "Build ZFP with CUDA support")
 FetchContent_Declare(
     ZFP
     GIT_REPOSITORY https://github.com/LLNL/zfp.git
-    GIT_TAG 1.0.0
+    GIT_TAG 1.0.1
+    #GIT_TAG 1.0.0
 )
 FetchContent_MakeAvailable(ZFP)
 
@@ -60,8 +61,10 @@ FetchContent_MakeAvailable(cuszp)
 FetchContent_Declare(
     NVCOMP
     DOWNLOAD_EXTRACT_TIMESTAMP false
-    URL https://developer.download.nvidia.com/compute/nvcomp/2.6.1/local_installers/nvcomp_2.6.1_x86_64_12.x.tgz
-    URL_HASH SHA256=ac4834397291f245578af959694e816d96f80036eac50b5f24b113dee5b54225
+    URL https://developer.download.nvidia.com/compute/nvcomp/redist/nvcomp/linux-x86_64/nvcomp-linux-x86_64-5.3.0.16_cuda13-archive.tar.xz
+    URL_HASH SHA256=2c36f5af63c37e4afe13d14f912e84130e6a05f07b066547b3e028c4ca54c866
+    #URL https://developer.download.nvidia.com/compute/nvcomp/2.6.1/local_installers/nvcomp_2.6.1_x86_64_12.x.tgz
+    #URL_HASH SHA256=ac4834397291f245578af959694e816d96f80036eac50b5f24b113dee5b54225
     TLS_VERIFY false
 )
 FetchContent_MakeAvailable(NVCOMP)
