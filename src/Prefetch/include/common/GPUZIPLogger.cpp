@@ -1,5 +1,6 @@
 #pragma once
 #include "GPUZIPConfig.h"
+#include "real_t.h"
 #include "structs.h"
 #include <cstdarg>
 #include <cstdio>
@@ -200,7 +201,7 @@ public:
   static void LogCompressionMetrics(Field_t *field, unsigned timestep,
                                     unsigned type) {
     if (logCompressionMetrics) {
-      size_t uncompressed_len = field->n1 * field->n2 * field->n3 * sizeof(float);
+      size_t uncompressed_len = field->n1 * field->n2 * field->n3 * sizeof(real_t);
       size_t compressed_len = field->size;
       double ratio = (double)uncompressed_len / (double)compressed_len;
       fprintf(stderr, "[CR], %i, %i, %lu, %lu, %.3f\n", timestep, type,
