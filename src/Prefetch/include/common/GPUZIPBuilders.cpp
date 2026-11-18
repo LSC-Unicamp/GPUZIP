@@ -129,6 +129,11 @@ public:
     }
   }
 
+  /// Floating-point kind of the checkpointed fields, as the compressors name it.
+  static const char *real_kind() {
+    return sizeof(real_t) == sizeof(double) ? "double" : "float";
+  }
+
   /**
    * @brief Constructs the appropriate compressor based on the configuration.
    *
@@ -145,7 +150,7 @@ public:
     if (gpuzip_config->compressor == 1) {
 #ifdef ZFP
       return std::make_unique<CompressorZFP<void, void>>(
-          n1, n2, n3, "float", gpuzip_config->zfp_bit_rate);
+          n1, n2, n3, real_kind(), gpuzip_config->zfp_bit_rate);
 #else
       fprintf(stderr, "This software was not built with cuZFP. Rebuild with "
                       "-DZFP=1 or see docs for more information.\n");
@@ -157,7 +162,7 @@ public:
           n1, n2, n3, gpuzip_config->bitcomp_delta_config,
           gpuzip_config->bitcomp_range_fraction,
           gpuzip_config->bitcomp_num_sigma, gpuzip_config->bitcomp_delta,
-          "float",
+          real_kind(),
           gpuzip_config->bitcomp_algorithm == 0 ? "default" : "sparse");
 #else
       fprintf(stderr,

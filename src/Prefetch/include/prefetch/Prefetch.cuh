@@ -4,6 +4,7 @@
 #include "../cache/GPUCheckpointCacheMemento.cuh"
 #include "../common/GPUZIPLogger.cpp"
 #include "../common/cudaUtils.cuh"
+#include "../common/real_t.h"
 #include "../common/structs.h"
 
 #include <chrono>
@@ -75,7 +76,7 @@ protected:
     }
     int dev;
     cudaGetDevice(&dev);
-    const size_t raw = field->n1 * field->n2 * field->n3 * sizeof(float);
+    const size_t raw = field->n1 * field->n2 * field->n3 * sizeof(real_t);
     GPUZIPLogger::Error(
         "\nGPUZIP error [DEVICE=%i] %s: the %s field of timestep %u needs %zu "
         "bytes but a checkpoint slot holds %zu bytes.\n",
@@ -114,7 +115,7 @@ protected:
           "compressor failed (%s) on the %s field of timestep %u, compressing "
           "%zu bytes into a checkpoint slot of %zu bytes.\n",
           dev, e.what(), type == 0 ? "current" : "previous", timestep,
-          (size_t)(slot->n1 * slot->n2 * slot->n3 * sizeof(float)),
+          (size_t)(slot->n1 * slot->n2 * slot->n3 * sizeof(real_t)),
           slot->capacity);
       GPUZIPLogger::Error(
           "The likely cause is a field that compresses worse than the "
@@ -137,7 +138,7 @@ protected:
     }
     if (compression && field->size > 0) {
       const double ratio =
-          (double)(field->n1 * field->n2 * field->n3 * sizeof(float)) /
+          (double)(field->n1 * field->n2 * field->n3 * sizeof(real_t)) /
           field->size;
       if (min_ratio == 0.0 || ratio < min_ratio) {
         min_ratio = ratio;
@@ -768,11 +769,11 @@ protected:
       }
 
       copyMetadata(curr, cache->getCurrFieldAt(hit_index));
-      curr->size = curr->n1 * curr->n2 * curr->n3 * sizeof(float);
+      curr->size = curr->n1 * curr->n2 * curr->n3 * sizeof(real_t);
       compcurr->Decompress(cache->getCurrFieldAt(hit_index)->data, curr->data);
 
       copyMetadata(prev, cache->getPrevFieldAt(hit_index));
-      prev->size = prev->n1 * prev->n2 * prev->n3 * sizeof(float);
+      prev->size = prev->n1 * prev->n2 * prev->n3 * sizeof(real_t);
       compprev->Decompress(cache->getPrevFieldAt(hit_index)->data, prev->data);
 
       cache->getIndex(timestep, 0);
@@ -834,11 +835,11 @@ protected:
       NvtxPop();
 
       copyMetadata(curr, cache->getCurrTop());
-      curr->size = curr->n1 * curr->n2 * curr->n3 * sizeof(float);
+      curr->size = curr->n1 * curr->n2 * curr->n3 * sizeof(real_t);
       compcurr->Decompress(cache->getCurrTop()->data, curr->data);
 
       copyMetadata(prev, cache->getPrevTop());
-      prev->size = prev->n1 * prev->n2 * prev->n3 * sizeof(float);
+      prev->size = prev->n1 * prev->n2 * prev->n3 * sizeof(real_t);
       compprev->Decompress(cache->getPrevTop()->data, prev->data);
 
       // Waiting for default stream since compressors are using it.
@@ -965,7 +966,7 @@ public:
    * @param numSnaps Number of snapshots to manage.
    * @param timesteps Total number of timesteps.
    * @param biggest_checkpoint_len Maximum allowed length for a field,
-   * calculated as n1 * n2 * n3 * sizeof(float).
+   * calculated as n1 * n2 * n3 * sizeof(real_t).
    * @param chkpt Pointer to the checkpointing mechanism.
    * @param _cache_capacity The capacity of the prefetch cache.
    */
